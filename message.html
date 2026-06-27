@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>メッセージ</title>
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="message.css">
+</head>
+<body>
+
+<!-- ======== AUTH SCREEN ======== -->
+<div class="screen" id="auth-screen">
+  <div class="card">
+    <div class="logo">&#128172;<span> メッセージ</span></div>
+
+    <div class="tabs">
+      <button class="tab active" id="tab-login">ログイン</button>
+      <button class="tab" id="tab-register">新規登録</button>
+    </div>
+
+    <!-- Login -->
+    <div id="form-login">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label>ルームコード</label>
+          <input type="text" id="login-code" placeholder="自分のルームコードを入力" autocomplete="off">
+        </div>
+        <div>
+          <label>パスワード</label>
+          <input type="password" id="login-pass" placeholder="パスワードを入力" autocomplete="current-password">
+        </div>
+        <button class="btn btn-primary" id="login-btn">ログイン</button>
+      </div>
+    </div>
+
+    <!-- Register -->
+    <div id="form-register" style="display:none">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label>ニックネーム</label>
+          <input type="text" id="reg-nickname" placeholder="表示名を入力" maxlength="20" autocomplete="off">
+        </div>
+        <div>
+          <label>ルームコード（自分で決める・変更不可）</label>
+          <input type="text" id="reg-code" placeholder="半角英数字（例: mycode2024）" maxlength="20" autocomplete="off">
+        </div>
+        <div>
+          <label>パスワード</label>
+          <input type="password" id="reg-pass" placeholder="パスワードを設定" autocomplete="new-password">
+        </div>
+        <button class="btn btn-primary" id="register-btn">登録</button>
+        <p class="hint">ルームコードは相手に教えることでDMを受け取れます。<br>一度登録すると変更できません。</p>
+      </div>
+    </div>
+
+    <p class="error-msg" id="auth-error"></p>
+    <div class="auth-divider">管理者</div>
+    <input type="email" id="admin-email-in" placeholder="管理者メールアドレス" autocomplete="email"
+      style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:15px;outline:none;font-family:inherit;box-sizing:border-box;margin-bottom:8px">
+    <input type="password" id="admin-pass-in" placeholder="パスワード" autocomplete="current-password"
+      style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:15px;outline:none;font-family:inherit;box-sizing:border-box;margin-bottom:8px">
+    <button class="btn btn-primary" id="admin-login-btn" style="width:100%">管理者ログイン</button>
+    <div class="admin-auth-err" id="admin-auth-err"></div>
+    <p style="font-size:11px;color:var(--text-dim);text-align:center">
+      <a href="terms.html" style="color:var(--text-dim)">利用規約</a>
+      &nbsp;|&nbsp;
+      <a href="privacy.html" style="color:var(--text-dim)">プライバシーポリシー</a>
+    </p>
+  </div>
+</div>
+
+<!-- ======== MAIN APP ======== -->
+<div id="app" class="hidden">
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sidebar-top">
+
+      <!-- 自分の情報 -->
+      <div class="me-row">
+        <div class="av" id="my-av"></div>
+        <div class="me-info" id="me-settings-trigger" title="設定">
+          <div class="me-nickname" id="my-nickname"></div>
+          <div class="me-code">コード: <span id="my-code-span"></span></div>
+        </div>
+        <div class="me-settings-arrow" id="me-settings-arrow">&#8964;</div>
+      </div>
+      <!-- 設定パネル -->
+      <div class="settings-panel hidden" id="settings-panel">
+        <div class="settings-row">
+          <span class="settings-label">ログイン維持</span>
+          <span class="settings-days-val" id="login-days-val">7日</span>
+        </div>
+        <input type="range" id="login-days-slider" min="1" max="30" value="7" class="settings-slider">
+        <button class="btn-logout-full" id="logout-btn">ログアウト</button>
+      </div>
+
+      <!-- 自分のコード表示 -->
+      <div class="my-code-box">
+        <span class="my-code-label">あなたのコード</span>
+        <span class="my-code-value" id="my-code-display"></span>
+        <button class="copy-btn" id="copy-btn" title="コピー">&#128203;</button>
+      </div>
+
+      <!-- 相手のコードでDM開始 -->
+      <div class="send-to-row">
+        <input type="text" id="to-code-input" placeholder="相手のコードを入力" autocomplete="off">
+        <button id="to-code-btn">開く</button>
+      </div>
+      <div class="sidebar-error" id="sidebar-error"></div>
+      <button class="notice-view-btn" id="notice-view-btn">&#128226; お知らせ</button>
+
+    </div>
+
+    <!-- タブ -->
+    <div class="conv-tabs">
+      <button class="conv-tab active" id="tab-dm">&#128172; DM</button>
+      <button class="conv-tab" id="tab-group">&#128101; グループ</button>
+    </div>
+
+    <!-- グループ操作バー（グループタブ時のみ表示） -->
+    <div class="group-actions-bar" id="group-actions-bar" style="display:none">
+      <button class="group-action-btn" id="group-create-btn">＋ 作成</button>
+      <button class="invite-icon-btn" id="invite-check-btn" title="招待を確認">
+        &#128140;<span class="invite-count-badge" id="invite-count-badge" style="display:none">0</span>
+      </button>
+    </div>
+
+    <!-- 会話一覧 -->
+    <div id="conv-list">
+      <div class="loading"><div class="spinner"></div>読み込み中...</div>
+    </div>
+  </div>
+
+  <!-- CHAT PANEL -->
+  <div id="chat-panel">
+    <div id="no-chat">
+      <div class="big">&#128172;</div>
+      <div>相手のコードを入力してDMを開始</div>
+      <div style="font-size:12px;color:var(--text-dim)">または左の会話一覧から選択</div>
+    </div>
+
+    <div id="active-chat" style="display:none;flex-direction:column;height:100%">
+      <div id="chat-header">
+        <button id="back-btn">&#8592;</button>
+        <div class="av-sm" id="partner-av"></div>
+        <div style="flex:1;min-width:0">
+          <div class="partner-name" id="partner-name-el"></div>
+          <div class="partner-code" id="partner-code-el"></div>
+        </div>
+        <button class="call-hdr-btn" id="voice-call-btn" title="音声通話">📞</button>
+        <button class="call-hdr-btn" id="video-call-btn" title="ビデオ通話">🎥</button>
+        <div style="position:relative">
+          <button class="call-hdr-btn" id="group-call-btn" title="グループ通話" style="display:none;background:var(--green)">&#128222;</button>
+          <div id="call-picker" class="hidden">
+            <button class="call-picker-btn" id="picker-voice">&#128222; 音声通話</button>
+            <button class="call-picker-btn" id="picker-video">&#127909; ビデオ通話</button>
+          </div>
+        </div>
+        <button class="group-hdr-btn" id="group-settings-btn" title="グループ設定" style="display:none">&#9881;</button>
+      </div>
+      <div id="messages"></div>
+      <div id="typing-indicator" class="hidden" style="height:18px;padding:0 16px;font-size:12px;color:#888;font-style:italic;line-height:18px"></div>
+      <div class="upload-bar-wrap" id="upload-bar-wrap">
+        <div class="upload-bar-label">
+          <span id="upload-filename">アップロード中...</span>
+          <span id="upload-pct">0%</span>
+        </div>
+        <div class="upload-bar"><div class="upload-bar-fill" id="upload-bar-fill"></div></div>
+      </div>
+      <div id="input-wrap">
+      <!-- スタンプピッカー -->
+      <div id="stamp-picker" class="hidden">
+        <div class="stamp-grid" id="stamp-grid"></div>
+      </div>
+      <div id="input-area">
+        <input type="file" id="file-input" style="display:none" accept="image/*">
+        <label class="attach-label" for="file-input" title="ファイルを添付">&#128206;</label>
+        <button id="stamp-btn" title="スタンプ" type="button">&#127987;</button>
+        <textarea id="msg-input" rows="1" placeholder="メッセージを入力…" maxlength="1000" disabled></textarea>
+        <button id="send-btn" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+      </div><!-- /input-wrap -->
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div style="position:fixed;bottom:6px;left:50%;transform:translateX(-50%);font-size:11px;color:#444;white-space:nowrap;z-index:1">
+  <a href="terms.html" style="color:#555;text-decoration:none">利用規約</a>
+  &nbsp;|&nbsp;
+  <a href="privacy.html" style="color:#555;text-decoration:none">プライバシーポリシー</a>
+</div>
+<div id="lightbox"><img id="lightbox-img" src="" alt=""></div>
+
+<!-- ======== DELETE ACTION SHEET ======== -->
+<div id="delete-sheet" style="display:none">
+  <div id="delete-overlay" style="flex:1;background:rgba(0,0,0,.45)"></div>
+  <div style="background:#fff;border-radius:16px 16px 0 0;padding:16px 16px 24px;display:flex;flex-direction:column;gap:10px">
+    <button id="delete-text-btn"  style="width:100%;padding:14px;background:#e53935;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer">🗑 メッセージを消去</button>
+    <button id="delete-image-btn" style="width:100%;padding:14px;background:#e53935;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer">🖼 画像を消去</button>
+    <button id="delete-cancel-btn" style="width:100%;padding:14px;background:#f5f5f5;color:#333;border:none;border-radius:10px;font-size:15px;cursor:pointer">キャンセル</button>
+  </div>
+</div>
+
+<!-- ======== INCOMING GROUP CALL ======== -->
+<div id="incoming-group-call" class="hidden">
+  <div class="inc-av" style="background:#2a7a5e;animation:ringPulse 1s ease infinite">&#128101;</div>
+  <div class="inc-info">
+    <div class="inc-name" id="inc-gcall-name">グループ通話</div>
+    <div class="inc-type" id="inc-gcall-type">音声通話</div>
+  </div>
+  <div class="inc-btns">
+    <button class="inc-btn reject" id="reject-gcall-btn">&#10005;</button>
+    <button class="inc-btn accept" id="accept-gcall-btn">&#128222;</button>
+  </div>
+</div>
+
+<!-- ======== INCOMING CALL ======== -->
+<div id="incoming-call" class="hidden">
+  <div class="inc-av" id="inc-caller-av">?</div>
+  <div class="inc-info">
+    <div class="inc-name" id="inc-caller-name">発信者</div>
+    <div class="inc-type" id="inc-call-type">音声通話</div>
+  </div>
+  <div class="inc-btns">
+    <button class="inc-btn reject" id="reject-call-btn">✕</button>
+    <button class="inc-btn accept" id="accept-call-btn">📞</button>
+  </div>
+</div>
+
+<!-- ======== ACTIVE CALL ======== -->
+<div id="call-overlay" class="hidden">
+  <video id="remote-video" autoplay playsinline></video>
+  <img id="remote-video-img" alt="">
+  <video id="local-video"  autoplay playsinline muted></video>
+  <video id="cam-pip-local" autoplay playsinline muted></video>
+  <audio id="remote-audio" autoplay></audio>
+  <div class="call-top-bar" id="call-top-bar">
+    <div class="call-top-name"  id="call-top-name"></div>
+    <div class="call-top-timer" id="call-top-timer">00:00</div>
+  </div>
+  <div class="call-center" id="call-center">
+    <div class="call-center-av"   id="call-center-av">?</div>
+    <div class="call-center-name" id="call-center-name"></div>
+    <div class="call-status"      id="call-status">呼び出し中...</div>
+    <div id="call-timer">00:00</div>
+  </div>
+  <div class="call-controls">
+    <button class="ctrl-btn mic" id="toggle-mic-btn">🎤</button>
+    <button class="ctrl-btn cam" id="toggle-cam-btn" style="display:none">📷</button>
+    <button class="ctrl-btn screen" id="toggle-screen-btn" style="display:none" title="画面共有">🖥️</button>
+    <button class="ctrl-btn end" id="end-call-btn">📵</button>
+  </div>
+</div>
+
+<!-- ======== 管理者画面 ======== -->
+<div id="admin-screen" class="hidden">
+  <div class="admin-header">
+    <div>
+      <div class="admin-header-title">&#9881; 管理者パネル</div>
+      <div class="admin-header-user" id="admin-user-email"></div>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="admin-signout-btn">&#128275; ログアウト</button>
+  </div>
+  <div class="admin-body">
+
+    <!-- バージョン -->
+    <div class="admin-section">
+      <div class="admin-section-title">&#128196; バージョン管理</div>
+      <div class="admin-section-body">
+        <div class="version-current">現在: v<span id="version-display">-</span></div>
+        <input type="text" id="version-input" placeholder="新しいバージョン（例: 1.0.1）" maxlength="20"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:15px;outline:none;font-family:inherit;">
+        <button id="version-save-btn" class="btn btn-primary">保存</button>
+      </div>
+    </div>
+
+    <!-- ストレージクリーンアップ -->
+    <div class="admin-section">
+      <div class="admin-section-title">&#128465; ストレージクリーンアップ</div>
+      <div class="admin-section-body">
+        <div style="font-size:13px;color:var(--text-dim);margin-bottom:10px">チャット・グループの画像データ（Base64）をDBから一括削除します。メッセージ自体は「削除済み」として残ります。</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button id="cleanup-scan-btn" class="btn btn-ghost btn-sm">&#128269; スキャン</button>
+          <button id="cleanup-run-btn" class="btn btn-sm" style="background:#c0392b;color:#fff;display:none">&#128465; 全件一括削除</button>
+        </div>
+        <div id="cleanup-result" style="margin-top:10px;font-size:13px;color:var(--text-dim)"></div>
+        <div id="cleanup-list" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+    </div>
+
+    <!-- お知らせ -->
+    <div class="admin-section">
+      <div class="admin-section-title">&#128226; お知らせ管理</div>
+      <div id="notices-list" class="notices-list" style="max-height:300px"></div>
+      <div id="notice-form" class="notice-form" style="display:none">
+        <input type="text" id="notice-title-in" placeholder="タイトル" maxlength="50">
+        <textarea id="notice-body-in" placeholder="内容（https://...はリンクになります）" maxlength="500" rows="4"></textarea>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button id="notice-cancel-btn" class="btn btn-ghost btn-sm">キャンセル</button>
+          <button id="notice-submit-btn" class="btn btn-primary btn-sm">投稿</button>
+        </div>
+      </div>
+      <div class="notice-add-wrap">
+        <button id="notice-add-btn" class="btn btn-primary">+ お知らせを投稿</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ======== お知らせ閲覧（一般ユーザー・読み取り専用） ======== -->
+<div id="notice-viewer" class="hidden">
+  <div class="notices-panel">
+    <div class="notices-header">
+      <span>&#128226; お知らせ</span>
+      <button class="notices-close-btn" id="notice-viewer-close">&#10005;</button>
+    </div>
+    <div id="notice-viewer-list" class="notices-list"></div>
+  </div>
+</div>
+
+<!-- ======== グループ作成モーダル ======== -->
+<div class="g-modal-overlay hidden" id="group-create-modal">
+  <div class="g-modal-panel">
+    <div class="g-modal-header">
+      <span>&#128101; グループを作成</span>
+      <button class="g-modal-close" id="group-create-close">&#10005;</button>
+    </div>
+    <div class="g-modal-body">
+      <div>
+        <label>グループ名</label>
+        <input type="text" id="gname-input" placeholder="グループ名を入力" maxlength="30" autocomplete="off">
+      </div>
+      <div>
+        <label>グループコード（変更不可・重複不可）</label>
+        <input type="text" id="gcode-input" placeholder="半角英数字（例: mygroup2024）" maxlength="20" autocomplete="off">
+      </div>
+      <p class="hint">グループコードは重複できません。作成後は変更できません。</p>
+      <div class="g-modal-error" id="group-create-error"></div>
+      <button class="btn btn-primary" id="group-create-submit">作成</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======== 招待一覧モーダル ======== -->
+<div class="g-modal-overlay hidden" id="invite-list-modal">
+  <div class="g-modal-panel">
+    <div class="g-modal-header">
+      <span>&#128140; グループ招待</span>
+      <button class="g-modal-close" id="invite-list-close">&#10005;</button>
+    </div>
+    <div class="g-modal-body" id="invite-list-body">
+      <div class="loading"><div class="spinner"></div>読み込み中...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ======== グループ設定モーダル ======== -->
+<div class="g-modal-overlay hidden" id="group-settings-modal">
+  <div class="g-modal-panel">
+    <div class="g-modal-header">
+      <span id="gsettings-title">グループ設定</span>
+      <button class="g-modal-close" id="group-settings-close">&#10005;</button>
+    </div>
+    <div class="g-modal-body">
+      <div id="gsettings-rename-section">
+        <label>グループ名を変更</label>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="gsettings-newname" placeholder="新しいグループ名" maxlength="30" style="flex:1" autocomplete="off">
+          <button class="btn btn-primary btn-sm" id="gsettings-rename-btn" style="flex-shrink:0">変更</button>
+        </div>
+      </div>
+      <div id="gsettings-invite-section">
+        <label>メンバーを招待（相手のルームコード）</label>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="gsettings-invite-code" placeholder="相手のルームコード" maxlength="20" style="flex:1" autocomplete="off">
+          <button class="btn btn-primary btn-sm" id="gsettings-invite-btn" style="flex-shrink:0">招待</button>
+        </div>
+      </div>
+      <div>
+        <label style="margin-bottom:6px;display:block">メンバー</label>
+        <div id="gsettings-member-list"></div>
+      </div>
+      <div id="gsettings-banned-section" style="display:none">
+        <div class="banned-section-title">&#128683; BAN・KICKされたユーザー</div>
+        <div id="gsettings-banned-list"></div>
+      </div>
+      <div class="g-modal-error" id="gsettings-error"></div>
+      <button class="btn btn-sm btn-danger-outline" id="gsettings-leave-btn" style="display:none">&#128682; グループを退出</button>
+      <button class="btn btn-sm btn-danger-outline" id="gsettings-delete-btn" style="display:none">&#128465; グループを削除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======== GROUP CALL OVERLAY ======== -->
+<div id="group-call-overlay" class="hidden">
+  <div class="gcall-header">
+    <div class="gcall-title" id="gcall-title">グループ通話</div>
+    <div class="gcall-timer-el" id="gcall-timer">00:00</div>
+  </div>
+  <div class="gcall-grid c1" id="gcall-grid"></div>
+  <div class="gcall-controls">
+    <button class="ctrl-btn mic" id="gcall-mic-btn">&#127908;</button>
+    <button class="ctrl-btn cam" id="gcall-cam-btn" style="display:none">&#128247;</button>
+    <button class="ctrl-btn screen" id="gcall-screen-btn" style="display:none" title="画面共有">🖥️</button>
+    <button class="ctrl-btn end" id="gcall-end-btn">&#128245;</button>
+  </div>
+</div>
+
+<input type="file" id="avatar-input" accept="image/*" style="display:none">
+<script type="module" src="message.js"></script>
+</body>
+</html>
